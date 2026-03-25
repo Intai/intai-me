@@ -20,7 +20,6 @@ TERRAFORM_VARS = \
 	-var "domain_name=$(DOMAIN_NAME)" \
 	-var "certbot_email=$(CERTBOT_EMAIL)" \
 	-var "instance_type=$(INSTANCE_TYPE)" \
-	-var "vpc_cidr=$(VPC_CIDR)" \
 	-var "project_name=$(PROJECT_NAME)" \
 	-var "environment=$(ENVIRONMENT)" \
 	-var "target_os=$(TARGET_OS)" \

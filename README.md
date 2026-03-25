@@ -15,7 +15,6 @@
    | `DOMAIN_NAME` | Domain name for the web server |
    | `CERTBOT_EMAIL` | Email for Let's Encrypt certificate notifications |
    | `INSTANCE_TYPE` | EC2 instance type (e.g. `t3.micro`, `t4g.micro`) |
-   | `VPC_CIDR` | CIDR block for the VPC |
    | `PROJECT_NAME` | Identifier used for resource tagging |
    | `ENVIRONMENT` | Deployment environment (e.g. `production`) |
    | `TARGET_OS` | `linux` (Amazon Linux 2023) or `windows` (Windows Server 2022) |
