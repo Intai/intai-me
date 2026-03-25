@@ -1,0 +1,13 @@
+[Unit]
+Description=Obtain Let's Encrypt certificate on first boot
+After=network-online.target nginx.service
+Wants=network-online.target
+ConditionPathExists=!/etc/letsencrypt/live/{{ domain_name }}
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot --nginx -d {{ domain_name }} -d www.{{ domain_name }} --non-interactive --agree-tos -m {{ certbot_email }} --redirect
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

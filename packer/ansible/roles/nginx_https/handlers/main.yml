@@ -1,0 +1,12 @@
+---
+- name: restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+  when: ansible_facts['os_family'] != 'Windows'
+
+- name: restart nginx windows
+  ansible.windows.win_service:
+    name: nginx
+    state: restarted
+  when: ansible_facts['os_family'] == 'Windows'

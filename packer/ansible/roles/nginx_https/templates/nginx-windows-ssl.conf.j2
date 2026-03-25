@@ -1,0 +1,52 @@
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile      on;
+    keepalive_timeout  65;
+    gzip  on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+
+    server {
+        listen 80;
+        listen 443 ssl;
+        server_name www.{{ domain_name }};
+
+        ssl_certificate     {{ win_nginx_dir | regex_replace('\\\\', '/') }}/ssl/{{ domain_name }}-chain.pem;
+        ssl_certificate_key {{ win_nginx_dir | regex_replace('\\\\', '/') }}/ssl/{{ domain_name }}-key.pem;
+
+        return 301 https://{{ domain_name }}$request_uri;
+    }
+
+    server {
+        listen 80;
+        server_name {{ domain_name }};
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl;
+        server_name {{ domain_name }};
+        root {{ win_nginx_root | regex_replace('\\\\', '/') }};
+        index index.html;
+
+        ssl_certificate     {{ win_nginx_dir | regex_replace('\\\\', '/') }}/ssl/{{ domain_name }}-chain.pem;
+        ssl_certificate_key {{ win_nginx_dir | regex_replace('\\\\', '/') }}/ssl/{{ domain_name }}-key.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
+}

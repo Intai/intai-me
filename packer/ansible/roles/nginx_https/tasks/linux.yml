@@ -1,0 +1,97 @@
+---
+- name: Install nginx and certbot
+  ansible.builtin.dnf:
+    name:
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+    state: present
+
+- name: Create site directory
+  ansible.builtin.file:
+    path: "{{ linux_nginx_root }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy site files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ linux_nginx_root }}/{{ item }}"
+    mode: "0644"
+  loop:
+    - index.html
+    - cv.pdf
+
+- name: Deploy nginx configuration
+  ansible.builtin.template:
+    src: nginx-linux.conf.j2
+    dest: "{{ linux_nginx_conf_dir }}/{{ domain_name }}.conf"
+    mode: "0644"
+  notify: restart nginx
+
+- name: Enable and start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Create certbot renewal hook directory
+  ansible.builtin.file:
+    path: /etc/letsencrypt/renewal-hooks/deploy
+    state: directory
+    mode: "0755"
+
+- name: Create certbot renewal hook to reload nginx
+  ansible.builtin.copy:
+    content: |
+      #!/bin/bash
+      systemctl reload nginx
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+    mode: "0755"
+
+- name: Create certbot renewal timer
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Certbot renewal timer
+
+      [Timer]
+      OnCalendar=*-*-* 00,12:00:00
+      RandomizedDelaySec=3600
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+    dest: /etc/systemd/system/certbot-renew.timer
+    mode: "0644"
+
+- name: Create certbot renewal service
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Certbot renewal
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/certbot renew --quiet
+    dest: /etc/systemd/system/certbot-renew.service
+    mode: "0644"
+
+- name: Enable certbot renewal timer
+  ansible.builtin.systemd:
+    name: certbot-renew.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Deploy certbot first-boot service
+  ansible.builtin.template:
+    src: certbot-init.service.j2
+    dest: /etc/systemd/system/certbot-init.service
+    mode: "0644"
+
+- name: Enable certbot first-boot service
+  ansible.builtin.systemd:
+    name: certbot-init.service
+    enabled: true
+    daemon_reload: true

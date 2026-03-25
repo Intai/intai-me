@@ -1,0 +1,14 @@
+---
+domain_name: "intai.me"
+certbot_email: "admin@intai.me"
+
+# Linux paths
+linux_nginx_root: "/usr/share/nginx/html"
+linux_nginx_conf_dir: "/etc/nginx/conf.d"
+
+# Windows paths
+win_nginx_dir: "C:\\nginx"
+win_nginx_root: "C:\\nginx\\html"
+win_nginx_conf_dir: "C:\\nginx\\conf"
+win_winacme_dir: "C:\\tools\\win-acme"
+win_nssm_dir: "C:\\tools\\nssm"

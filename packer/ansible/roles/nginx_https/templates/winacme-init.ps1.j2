@@ -1,0 +1,21 @@
+# First-boot script to request HTTPS certificate via win-acme
+# Self-disables after successful execution
+
+$wacs = "{{ win_winacme_dir }}\wacs.exe"
+$domain = "{{ domain_name }}"
+$email = "{{ certbot_email }}"
+$nginxConf = "{{ win_nginx_conf_dir | regex_replace('\\\\', '\\\\') }}\nginx.conf"
+
+# Request certificate
+& $wacs --target manual --host $domain `
+    --store pemfiles --pemfilespath "{{ win_nginx_dir }}\ssl" `
+    --installation script --script "powershell" `
+    --scriptparameters "-Command Restart-Service nginx" `
+    --emailaddress $email --accepttos
+
+# If successful, activate HTTPS config and disable this task
+if ($LASTEXITCODE -eq 0) {
+    Copy-Item "{{ win_nginx_conf_dir | regex_replace('\\\\', '\\\\') }}\\nginx-ssl.conf" $nginxConf -Force
+    Restart-Service nginx
+    Disable-ScheduledTask -TaskName "WinAcmeInit"
+}

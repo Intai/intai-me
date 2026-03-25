@@ -1,0 +1,129 @@
+---
+- name: Create nginx directory
+  ansible.windows.win_file:
+    path: "{{ win_nginx_dir }}"
+    state: directory
+
+- name: Create temp directory
+  ansible.windows.win_file:
+    path: C:\temp
+    state: directory
+
+- name: Download nginx for Windows
+  ansible.windows.win_get_url:
+    url: https://nginx.org/download/nginx-1.28.3.zip
+    dest: C:\temp\nginx.zip
+
+- name: Extract nginx
+  community.windows.win_unzip:
+    src: C:\temp\nginx.zip
+    dest: C:\temp\nginx-extract
+    creates: C:\temp\nginx-extract
+
+- name: Move nginx files to install directory
+  ansible.windows.win_shell: |
+    $src = Get-ChildItem C:\temp\nginx-extract -Directory | Select-Object -First 1
+    Copy-Item "$($src.FullName)\*" "{{ win_nginx_dir }}" -Recurse -Force
+  args:
+    creates: "{{ win_nginx_dir }}\\nginx.exe"
+
+- name: Create site directory
+  ansible.windows.win_file:
+    path: "{{ win_nginx_root }}"
+    state: directory
+
+- name: Copy site files
+  ansible.windows.win_copy:
+    src: "{{ item }}"
+    dest: "{{ win_nginx_root }}\\{{ item }}"
+  loop:
+    - index.html
+    - cv.pdf
+
+- name: Deploy nginx configuration
+  ansible.windows.win_template:
+    src: nginx-windows.conf.j2
+    dest: "{{ win_nginx_conf_dir }}\\nginx.conf"
+  notify: restart nginx windows
+
+- name: Download NSSM
+  ansible.windows.win_get_url:
+    url: https://nssm.cc/release/nssm-2.24.zip
+    dest: C:\temp\nssm.zip
+
+- name: Create NSSM directory
+  ansible.windows.win_file:
+    path: "{{ win_nssm_dir }}"
+    state: directory
+
+- name: Extract NSSM
+  community.windows.win_unzip:
+    src: C:\temp\nssm.zip
+    dest: C:\temp\nssm-extract
+    creates: C:\temp\nssm-extract
+
+- name: Copy NSSM executable
+  ansible.windows.win_shell: |
+    Copy-Item "C:\temp\nssm-extract\nssm-2.24\win64\nssm.exe" "{{ win_nssm_dir }}\nssm.exe" -Force
+  args:
+    creates: "{{ win_nssm_dir }}\\nssm.exe"
+
+- name: Install nginx as Windows service via NSSM
+  ansible.windows.win_shell: |
+    & "{{ win_nssm_dir }}\nssm.exe" install nginx "{{ win_nginx_dir }}\nginx.exe"
+    & "{{ win_nssm_dir }}\nssm.exe" set nginx AppDirectory "{{ win_nginx_dir }}"
+  args:
+    creates: notused
+  register: nssm_result
+  failed_when: nssm_result.rc not in [0, 5]
+
+- name: Start nginx service
+  ansible.windows.win_service:
+    name: nginx
+    start_mode: auto
+    state: started
+
+- name: Create win-acme directory
+  ansible.windows.win_file:
+    path: "{{ win_winacme_dir }}"
+    state: directory
+
+- name: Download win-acme
+  ansible.windows.win_get_url:
+    url: https://github.com/win-acme/win-acme/releases/download/v2.2.9.1701/win-acme.v2.2.9.1701.x64.trimmed.zip
+    dest: C:\temp\win-acme.zip
+
+- name: Extract win-acme
+  community.windows.win_unzip:
+    src: C:\temp\win-acme.zip
+    dest: "{{ win_winacme_dir }}"
+    creates: "{{ win_winacme_dir }}\\wacs.exe"
+
+- name: Deploy win-acme first-boot script
+  ansible.windows.win_template:
+    src: winacme-init.ps1.j2
+    dest: "{{ win_winacme_dir }}\\winacme-init.ps1"
+
+- name: Deploy staged HTTPS nginx configuration
+  ansible.windows.win_template:
+    src: nginx-windows-ssl.conf.j2
+    dest: "{{ win_nginx_conf_dir }}\\nginx-ssl.conf"
+
+- name: Create first-boot scheduled task for win-acme
+  community.windows.win_scheduled_task:
+    name: WinAcmeInit
+    description: Request HTTPS certificate on first boot
+    actions:
+      - path: powershell.exe
+        arguments: "-ExecutionPolicy Bypass -File {{ win_winacme_dir }}\\winacme-init.ps1"
+    triggers:
+      - type: boot
+        delay: PT1M
+    username: SYSTEM
+    state: present
+    enabled: true
+
+- name: Clean up temp files
+  ansible.windows.win_file:
+    path: C:\temp
+    state: absent
