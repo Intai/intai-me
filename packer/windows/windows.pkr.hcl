@@ -26,16 +26,29 @@ source "amazon-ebs" "windows" {
     owners      = ["amazon"]
   }
 
-  communicator   = "winrm"
-  winrm_username = "Administrator"
-  winrm_password = var.winrm_password
-  winrm_use_ssl  = true
-  winrm_insecure = true
-  winrm_timeout  = "10m"
+  communicator = "ssh"
+  ssh_username = "Administrator"
+  ssh_timeout  = "10m"
 
-  user_data = templatefile("./scripts/configure-winrm.ps1", {
-    admin_password = var.winrm_password
-  })
+  user_data = <<-EOF
+    <powershell>
+    # Install OpenSSH Server
+    Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+
+    # Fetch Packer's temporary public key from instance metadata
+    $token = Invoke-RestMethod -Method PUT -Uri "http://169.254.169.254/latest/api/token" -Headers @{"X-aws-ec2-metadata-token-ttl-seconds" = "300"}
+    $publicKey = Invoke-RestMethod -Uri "http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key" -Headers @{"X-aws-ec2-metadata-token" = $token}
+
+    # Add public key to administrators_authorized_keys
+    $authKeysFile = "$env:ProgramData\ssh\administrators_authorized_keys"
+    Set-Content -Path $authKeysFile -Value $publicKey
+    icacls $authKeysFile /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
+
+    # Start sshd
+    Set-Service -Name sshd -StartupType Automatic
+    Start-Service sshd
+    </powershell>
+    EOF
 
   tags = {
     Name    = var.ami_name_prefix
@@ -55,7 +68,7 @@ build {
     ]
     extra_arguments = [
       "--extra-vars",
-      "ansible_user=Administrator domain_name=${var.domain_name} certbot_email=${var.certbot_email} ansible_winrm_server_cert_validation=ignore",
+      "ansible_user=Administrator domain_name=${var.domain_name} certbot_email=${var.certbot_email}",
     ]
   }
 

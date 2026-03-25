@@ -11,10 +11,6 @@ PACKER_VARS = \
 	-var "instance_type=$(INSTANCE_TYPE)" \
 	-var "project_name=$(PROJECT_NAME)"
 
-ifeq ($(TARGET_OS),windows)
-PACKER_VARS += -var "winrm_password=$$(openssl rand -base64 24)"
-endif
-
 TERRAFORM_VARS = \
 	-var "aws_region=$(AWS_REGION)" \
 	-var "domain_name=$(DOMAIN_NAME)" \

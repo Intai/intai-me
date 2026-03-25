@@ -25,8 +25,3 @@ variable "project_name" {
   type    = string
   default = "intai-me"
 }
-
-variable "winrm_password" {
-  type      = string
-  sensitive = true
-}

@@ -28,7 +28,7 @@ Live at https://intai.me/
    source .venv/bin/activate
    ```
 3. `aws configure` to set up AWS credentials for Terraform and Packer.
-4. `make install` to install dependencies (Ansible, pywinrm).
+4. `make install` to install dependencies (Ansible).
 5. `make ami` to build a custom EC2 AMI with Packer and Ansible, pre-configured with Nginx and automatic HTTPS (Certbot on Linux, Win-ACME on Windows).
 6. `make init` to initialize Terraform state and download provider plugins.
 7. `make deploy` to create the infrastructure: VPC, security groups, EC2 instance, Elastic IP, and Route53 DNS records.
