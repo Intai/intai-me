@@ -6,7 +6,7 @@ ConditionPathExists=!/etc/letsencrypt/live/{{ domain_name }}
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/certbot --nginx -d {{ domain_name }} -d www.{{ domain_name }} --non-interactive --agree-tos -m {{ certbot_email }} --redirect
+ExecStart=/usr/bin/certbot --nginx -d {{ domain_name }} -d www.{{ domain_name }} --non-interactive --agree-tos -m {{ certbot_email }} --redirect --hsts
 RemainAfterExit=true
 
 [Install]
