@@ -14,6 +14,7 @@ module "security" {
 
 module "compute" {
   source               = "./modules/compute"
+  aws_region           = var.aws_region
   project_name         = var.project_name
   environment          = var.environment
   target_os            = var.target_os
@@ -23,6 +24,7 @@ module "compute" {
   iam_instance_profile = module.security.instance_profile_name
   domain_name          = var.domain_name
   certbot_email        = var.certbot_email
+  init_https           = var.init_https
 }
 
 module "dns" {

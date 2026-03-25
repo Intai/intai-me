@@ -1,3 +1,7 @@
+variable "aws_region" {
+  type = string
+}
+
 variable "project_name" {
   type = string
 }
@@ -32,4 +36,9 @@ variable "domain_name" {
 
 variable "certbot_email" {
   type = string
+}
+
+variable "init_https" {
+  type    = bool
+  default = false
 }

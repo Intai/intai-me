@@ -48,3 +48,9 @@ variable "instance_type" {
   type        = string
   default     = "t3.micro"
 }
+
+variable "init_https" {
+  description = "Set to true to init HTTPS certificate via SSM after DNS is configured"
+  type        = bool
+  default     = false
+}

@@ -66,6 +66,22 @@ resource "aws_instance" "app" {
   })
 }
 
+resource "null_resource" "init_https" {
+  count = var.init_https ? 1 : 0
+
+  triggers = {
+    instance_id = aws_instance.app.id
+  }
+
+  provisioner "local-exec" {
+    command = var.target_os == "windows" ? (
+      "aws ssm send-command --instance-ids ${aws_instance.app.id} --document-name AWS-RunPowerShellScript --parameters '{\"commands\":[\"powershell.exe -ExecutionPolicy Bypass -File C:\\\\tools\\\\win-acme\\\\winacme-init.ps1\"]}' --region ${var.aws_region}"
+      ) : (
+      "aws ssm send-command --instance-ids ${aws_instance.app.id} --document-name AWS-RunShellScript --parameters '{\"commands\":[\"systemctl start certbot-init.service\"]}' --region ${var.aws_region}"
+    )
+  }
+}
+
 resource "aws_eip" "app" {
   instance = aws_instance.app.id
   domain   = "vpc"
