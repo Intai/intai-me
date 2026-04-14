@@ -18,6 +18,10 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml;
 
+    location = /cv.pdf {
+        add_header Content-Disposition 'inline; filename="Intai Huang CV.pdf"';
+    }
+
     location / {
         try_files $uri $uri/ =404;
     }
